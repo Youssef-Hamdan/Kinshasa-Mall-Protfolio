@@ -3,7 +3,7 @@
 import * as THREE from "three"
 import Image from "next/image"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Suspense, useEffect, useMemo, useRef } from "react"
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { Environment, MeshTransmissionMaterial, useTexture } from "@react-three/drei"
 import { HERO_3D_READY_EVENT } from "@/lib/site-loader-done"
@@ -37,6 +37,8 @@ const LOGO_ORTHO_CAMERA = {
 }
 const LOGO_CANVAS_GL = { alpha: true, antialias: true }
 const LOGO_CANVAS_DPR: [number, number] = [1, 2]
+/** Mobile hero: single DPR step avoids 2× retina fill-rate on the transmission pass. */
+const LOGO_CANVAS_DPR_LITE: [number, number] = [1, 1]
 
 /**
  * Same framing as CSS object-cover: scale-uniform + crop. Must run on the same
@@ -197,56 +199,66 @@ function TransmissionBackdrop() {
   )
 }
 
-function HoneycombMark() {
+export type Hero3DQuality = "full" | "lite"
+
+function HoneycombMark({ quality = "full" }: { quality?: Hero3DQuality }) {
   const groupRef = useRef<THREE.Group>(null)
   const { pointer } = useThree()
   const geometry = useMergedHoneycombGeometry()
+  const lite = quality === "lite"
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
 
-    groupRef.current.rotation.z += delta * 0.4
+    groupRef.current.rotation.z += delta * (lite ? 0.28 : 0.4)
+
+    const yawTarget = lite ? pointer.x * 0.1 : pointer.x * 0.14
+    const pitchTarget = lite ? -pointer.y * 0.07 : -pointer.y * 0.1
+    const lerp = lite ? 0.06 : 0.08
 
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
-      pointer.x * 0.14,
-      0.08
+      yawTarget,
+      lerp
     )
 
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
       groupRef.current.rotation.x,
-      -pointer.y * 0.1,
-      0.08
+      pitchTarget,
+      lerp
     )
   })
 
+  /** Slightly smaller on mobile (`lite`) so the hero glass mark doesn’t dominate narrow viewports. */
+  const markScale = lite ? 0.6 : 0.9
+
   return (
-    <group ref={groupRef} scale={0.9}>
+    <group ref={groupRef} scale={markScale}>
       <mesh geometry={geometry}>
         <MeshTransmissionMaterial
           backside
-          backsideThickness={0.25}
-          backsideEnvMapIntensity={1.35}
-          thickness={1}
+          backsideThickness={lite ? 0.2 : 0.25}
+          backsideEnvMapIntensity={lite ? 1.1 : 1.35}
+          thickness={lite ? 0.85 : 1}
           transmission={1}
-          roughness={0.038}
+          roughness={lite ? 0.055 : 0.038}
           ior={1.52}
-          chromaticAberration={0.16}
-          distortion={0.05}
-          distortionScale={0.8}
+          chromaticAberration={lite ? 0 : 0.16}
+          distortion={lite ? 0.03 : 0.05}
+          distortionScale={lite ? 0.65 : 0.8}
           temporalDistortion={0}
           color="#ffffff"
           attenuationColor="#ffffff"
-          attenuationDistance={12}
-          clearcoat={1}
-          clearcoatRoughness={0.05}
-          envMapIntensity={2}
-          samples={12}
-          resolution={1024}
-          anisotropicBlur={0.07}
-          iridescence={0.35}
-          iridescenceIOR={1.4}
-          iridescenceThicknessRange={[140, 520]}
+          attenuationDistance={lite ? 10 : 12}
+          clearcoat={lite ? 0.85 : 1}
+          clearcoatRoughness={lite ? 0.08 : 0.05}
+          envMapIntensity={lite ? 1.55 : 2}
+          samples={lite ? 4 : 12}
+          resolution={lite ? 512 : 1024}
+          anisotropicBlur={lite ? 0.03 : 0.07}
+          iridescence={lite ? 0 : 0.35}
+          iridescenceIOR={lite ? 1.3 : 1.4}
+          iridescenceThicknessRange={lite ? [200, 400] : [140, 520]}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -256,6 +268,18 @@ function HoneycombMark() {
 
 let heroSceneReadyEventDispatched = false
 
+/** Shared with mobile hero fallback — {@link SiteLoader} waits for this before dismissing. */
+function signalHeroSceneReady() {
+  if (typeof window === "undefined") return
+  if (heroSceneReadyEventDispatched) return
+  heroSceneReadyEventDispatched = true
+  queueMicrotask(() => {
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(HERO_3D_READY_EVENT))
+    }, 0)
+  })
+}
+
 /**
  * Renders only after the parent `<Suspense>` boundary resolves (textures, env HDR, etc.).
  * Dispatches {@link HERO_3D_READY_EVENT} in a macrotask so we never update during another
@@ -263,55 +287,84 @@ let heroSceneReadyEventDispatched = false
  */
 function HeroSceneReadySignal() {
   useEffect(() => {
-    if (heroSceneReadyEventDispatched) return
-    heroSceneReadyEventDispatched = true
-    queueMicrotask(() => {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent(HERO_3D_READY_EVENT))
-      }, 0)
-    })
+    signalHeroSceneReady()
   }, [])
   return null
 }
 
-export function Logo3DOverlay() {
+/** Tailwind `lg` — `full` quality above; below uses cheaper transmission + DPR. */
+const HERO_WEBGL_MIN_WIDTH = "(min-width: 1024px)"
+
+function Logo3DCanvas({ quality }: { quality: Hero3DQuality }) {
+  const lite = quality === "lite"
   return (
     <Canvas
       orthographic
       camera={LOGO_ORTHO_CAMERA}
-      dpr={LOGO_CANVAS_DPR}
-      gl={LOGO_CANVAS_GL}
+      dpr={lite ? LOGO_CANVAS_DPR_LITE : LOGO_CANVAS_DPR}
+      gl={{
+        ...LOGO_CANVAS_GL,
+        powerPreference: lite ? ("low-power" as const) : ("default" as const),
+      }}
+      resize={{ debounce: CANVAS_RESIZE }}
       className="!h-full !w-full"
     >
       <Suspense fallback={null}>
         <TransmissionBackdrop />
-        <ambientLight intensity={0.55} />
+        <ambientLight intensity={lite ? 0.6 : 0.55} />
         <directionalLight
           position={[10, 10, 5]}
-          intensity={1.2}
+          intensity={lite ? 1.05 : 1.2}
           color="#ffffff"
         />
         <directionalLight
           position={[-10, -5, 5]}
-          intensity={0.75}
+          intensity={lite ? 0.65 : 0.75}
           color="#368393"
         />
         <directionalLight
           position={[0, 0, 10]}
-          intensity={0.55}
+          intensity={lite ? 0.5 : 0.55}
           color="#7c935d"
         />
         <Environment preset="city" />
-        <HoneycombMark />
+        <HoneycombMark quality={quality} />
         <HeroSceneReadySignal />
       </Suspense>
     </Canvas>
   )
 }
 
+/** Debounce canvas size updates — iOS Safari fires noisy resize when the URL bar shows/hides. */
+const CANVAS_RESIZE: { scroll: number; resize: number } = {
+  scroll: 0,
+  resize: 120,
+}
+
+export function Logo3DOverlay() {
+  const [tier, setTier] = useState<"desktop" | "mobile" | null>(null)
+
+  useLayoutEffect(() => {
+    const mq = window.matchMedia(HERO_WEBGL_MIN_WIDTH)
+    const apply = () => {
+      setTier(mq.matches ? "desktop" : "mobile")
+    }
+    apply()
+    mq.addEventListener("change", apply)
+    return () => mq.removeEventListener("change", apply)
+  }, [])
+
+  if (tier === null) {
+    return null
+  }
+  return (
+    <Logo3DCanvas quality={tier === "mobile" ? "lite" : "full"} />
+  )
+}
+
 export default function ImageWith3DLogo() {
   return (
-    <section className="relative h-screen w-screen overflow-hidden">
+    <section className="relative h-[100lvh] min-h-[100lvh] w-screen overflow-hidden lg:h-screen lg:min-h-0">
       {/* Sharp photo — detail stays crisp; “glass” comes from the veil, not blur */}
       <div className="absolute inset-0 bg-surface-2">
         <Image
@@ -336,7 +389,7 @@ export default function ImageWith3DLogo() {
       </div>
 
       {/* Headline + supporting line: above the canvas so type sits on top of the 3D object */}
-      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-4 pt-[max(4.5rem,10svh)]">
+      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-4 pt-[max(4.5rem,10lvh)] lg:pt-[max(4.5rem,10svh)]">
         <h1 className="font-heading relative z-10 max-w-5xl text-center text-[clamp(3rem,8vw,6rem)] font-bold uppercase leading-[1.05] tracking-[0.04em] text-balance">
           <span className="block text-[var(--km-teal-deep)] dark:text-[var(--km-offwhite)] [text-shadow:0_4px_24px_rgba(255,255,255,0.8)] dark:[text-shadow:0_4px_32px_rgba(0,0,0,0.5)]">
             Kinshasa Mall

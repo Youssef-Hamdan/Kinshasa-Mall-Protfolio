@@ -1,4 +1,9 @@
-import { type HTMLMotionProps, motion, useInView } from "motion/react"
+import {
+  type HTMLMotionProps,
+  motion,
+  useInView,
+  useReducedMotion,
+} from "motion/react"
 import type React from "react"
 import type { Variants } from "motion/react"
 
@@ -53,12 +58,13 @@ function TimelineAnimationRoot({
 }) {
   const sequenceVariants = customVariants ?? defaultSequenceVariants
   const isInView = useInView(timelineRef, { once })
+  const reduceMotion = useReducedMotion()
   const MotionComponent = motion[as ?? "div"] as (typeof motion)["div"]
 
   return (
     <MotionComponent
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
+      initial={reduceMotion ? "visible" : "hidden"}
+      animate={reduceMotion || isInView ? "visible" : "hidden"}
       custom={animationNum}
       variants={sequenceVariants}
       className={className}
@@ -80,6 +86,7 @@ function TimelineAnimationSelf({
   ...props
 }: Omit<TimelineContentProps, "trigger" | "timelineRef">) {
   const sequenceVariants = customVariants ?? defaultSequenceVariants
+  const reduceMotion = useReducedMotion()
   const MotionComponent = motion[as ?? "div"] as (typeof motion)["div"]
 
   /**
@@ -95,8 +102,9 @@ function TimelineAnimationSelf({
 
   return (
     <MotionComponent
-      initial="hidden"
-      whileInView="visible"
+      initial={reduceMotion ? "visible" : "hidden"}
+      whileInView={reduceMotion ? undefined : "visible"}
+      animate={reduceMotion ? "visible" : undefined}
       viewport={{ ...defaultViewport, ...viewport }}
       custom={animationNum}
       variants={sequenceVariants}

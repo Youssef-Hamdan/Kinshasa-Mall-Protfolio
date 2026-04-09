@@ -98,7 +98,7 @@ export default function PremiumHero() {
   return (
     <section
       id="home"
-      className="relative flex min-h-[100svh] w-full max-lg:overflow-x-clip flex-col overflow-hidden bg-background"
+      className="relative flex min-h-[100lvh] w-full flex-col overflow-hidden bg-background lg:min-h-[100svh]"
     >
       <div className="absolute inset-0 z-0">
         <div className="hero-kenburns absolute inset-0 origin-center overflow-hidden">

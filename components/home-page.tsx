@@ -37,15 +37,14 @@ export function HomePage() {
         <PremiumHero />
       </TimelineAnimation>
 
-      <TimelineAnimation
-        as="div"
-        trigger="self"
-        animationNum={2}
-        customVariants={sectionRevealVariants}
-        className="relative w-full"
-      >
+      {/*
+        Avoid wrapping sticky + scroll-heavy sections in motion opacity/blur/y — the
+        animated ancestor composites the whole subtree and can jitter on iOS Safari.
+        MallInfoSection already uses in-view text motion internally.
+      */}
+      <div className="relative w-full">
         <MallInfoSection />
-      </TimelineAnimation>
+      </div>
     </main>
   )
 }

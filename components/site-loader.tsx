@@ -91,11 +91,11 @@ export function SiteLoader() {
     >
       <LiquidGlassSurface
         borderRadius="0"
-        className="min-h-[100svh] w-full"
+        className="min-h-[100lvh] w-full lg:min-h-[100svh]"
         blurIntensity="xl"
         glowIntensity="sm"
         shadowIntensity="sm"
-        contentClassName="flex min-h-[100svh] flex-col items-center justify-center gap-6 px-6"
+        contentClassName="flex min-h-[100lvh] flex-col items-center justify-center gap-6 px-6 lg:min-h-[100svh]"
       >
         <div className="text-center">
           <p className="font-heading text-foreground text-3xl font-bold uppercase tracking-[0.04em] md:text-4xl">

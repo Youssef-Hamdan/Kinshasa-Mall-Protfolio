@@ -236,7 +236,8 @@ export function HexagonalBackground({
       <div
         className={cn(
           "absolute inset-0",
-          enableDrift && "will-change-transform [transform:translateZ(0)]",
+          enableDrift &&
+            "lg:will-change-transform lg:[transform:translateZ(0)]",
           enableDrift && `hex-bg-anim-${cssSafeId}`
         )}
         style={{

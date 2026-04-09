@@ -217,7 +217,7 @@ export default function PremiumHeader() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute top-0 left-0 z-40 flex h-[100svh] min-h-[100svh] w-full flex-col items-center justify-center gap-8 bg-background pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]"
+              className="absolute top-0 left-0 z-40 flex h-[100lvh] min-h-[100lvh] w-full flex-col items-center justify-center gap-8 bg-background pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:h-[100svh] lg:min-h-[100svh]"
             >
               {navItems.map(
                 (item: { label: string; href: string }, i: number) => (

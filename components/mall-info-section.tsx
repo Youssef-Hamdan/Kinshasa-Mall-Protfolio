@@ -145,7 +145,7 @@ export default function MallInfoSection() {
     >
       {/* Section 1 — hero quote + hex façade */}
       <div className="wrapper relative w-full">
-        <section className="sticky top-0 grid h-[100svh] w-full place-content-center overflow-hidden bg-slate-950 text-white">
+        <section className="sticky top-0 grid h-[100lvh] w-full place-content-center overflow-hidden bg-slate-950 text-white lg:h-[100svh]">
           <HexagonalBackground />
           <div
             className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/20 via-transparent to-black/35"
@@ -181,7 +181,7 @@ export default function MallInfoSection() {
         {/* Opening hours — reference layout: sticky left column, plain grid of skew images on the right (scrolls past) */}
         <section className="w-full">
           <div className="grid grid-cols-[1fr_1fr] md:grid-cols-[minmax(17rem,1fr)_minmax(17rem,1fr)]">
-            <div className="sticky top-0 self-start flex h-[100svh] items-center justify-center px-2 py-8 sm:px-4 md:px-8 md:py-0">
+            <div className="sticky top-0 self-start flex h-[100lvh] items-center justify-center px-2 py-8 sm:px-4 md:px-8 md:py-0 lg:h-[100svh]">
               <div className="w-full max-w-[12rem] sm:max-w-md md:max-w-lg">
                 {/* Kicker + icon — matches hero quote label; brand accent on icon */}
                 <div className="mb-4 sm:mb-8 flex items-center gap-2 sm:gap-3">
@@ -231,7 +231,7 @@ export default function MallInfoSection() {
                 />
               </div>
             </div>
-            <div className="overflow-x-clip p-2 sm:p-4">
+            <div className="overflow-hidden p-2 sm:p-4">
               <div className="grid gap-2">
               {mallLayoutGallerySkew.map((img, i) => (
                 <figure
@@ -241,14 +241,15 @@ export default function MallInfoSection() {
                     i % 2 === 0 ? "-skew-x-6 sm:-skew-x-12" : "skew-x-6 sm:skew-x-12"
                   )}
                 >
-                  <div className="relative mx-auto h-[40svh] w-full max-w-[28rem] overflow-hidden bg-[#0a0a0a] sm:h-[28rem] sm:w-[26rem]">
+                  <div className="relative mx-auto h-[40lvh] w-full max-w-[28rem] overflow-hidden bg-[#0a0a0a] sm:h-[28rem] sm:w-[26rem]">
                     {/* eslint-disable-next-line @next/next/no-img-element -- avoids next/image optimizer issues with gallery tiles */}
                     <img
                       src={img.src}
                       alt={img.alt}
                       className="h-full w-full object-cover object-center transition-all duration-300"
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
+                      fetchPriority={i === 0 ? "high" : "auto"}
                     />
                   </div>
                 </figure>
@@ -270,15 +271,15 @@ export default function MallInfoSection() {
               {mallLayoutGallerySticky.map((img, i) => (
                 <figure
                   key={`sticky-${i}-${img.src}`}
-                  className="sticky top-0 grid h-[100svh] w-full place-content-center md:h-screen"
+                  className="sticky top-0 grid h-[100lvh] w-full place-content-center lg:h-[100svh]"
                 >
-                  <div className="relative mx-auto h-[min(16rem,40svh)] w-full max-w-xl overflow-hidden rounded-md bg-[#0a0a0a] shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:h-[28rem] md:h-[min(32rem,72vh)] md:max-w-[32rem]">
+                  <div className="relative mx-auto h-[min(16rem,40lvh)] w-full max-w-xl overflow-hidden rounded-md bg-[#0a0a0a] shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:h-[28rem] md:h-[min(32rem,72svh)] md:max-w-[32rem]">
                     {/* eslint-disable-next-line @next/next/no-img-element -- avoids next/image optimizer issues with gallery tiles */}
                     <img
                       src={img.src}
                       alt={img.alt}
                       className="h-full w-full object-cover object-center"
-                      loading={i === 0 ? "eager" : "lazy"}
+                      loading="eager"
                       decoding="async"
                       fetchPriority={i === 0 ? "high" : "auto"}
                     />
@@ -286,7 +287,7 @@ export default function MallInfoSection() {
                 </figure>
               ))}
             </div>
-            <div className="sticky top-0 self-start z-10 flex h-[100svh] min-w-0 flex-col justify-center py-8 md:h-screen md:py-12">
+            <div className="sticky top-0 self-start z-10 flex h-[100lvh] min-w-0 flex-col justify-center py-8 md:py-12 lg:h-[100svh]">
               <TextAnimation animationKey={locale}
                 as="p"
                 text={t.statsLead}
